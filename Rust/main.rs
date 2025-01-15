@@ -83,7 +83,7 @@ fn get_address(PID: u32, target_value: i32) -> Vec<String> {
     address_list 
 }
 
-fn read_values_at_addresses(PID: u32, addresses: Vec<String>) {
+fn read_values_at_addresses(PID: u32, addresses: Vec<String>, target_value: i32) {
     let process_handle: HANDLE = unsafe { OpenProcess(PROCESS_VM_READ, 0, PID) };
     if process_handle.is_null() {
         eprintln!("Failed to open process with PID {}", PID);
@@ -120,14 +120,14 @@ fn read_values_at_addresses(PID: u32, addresses: Vec<String>) {
 fn main() {
     
     let PID = get_process_id("NGUIdle.exe");
-    let address_book = get_address(PID, 888);
+    let address_book = get_address(PID, 868);
 
     println!("{:?}\nChange your number of idle energy please and enter the new value, click enter once value changed: ", address_book);
     let mut input = String::new();
     io::stdin().read_line(&mut input).expect("Failed to read line");
     println!("Continuing execution...");
 
-    read_values_at_addresses(PID, address_book)
+    read_values_at_addresses(PID, address_book, 858);
 
     //Use the address book and see what values have changed
 }
