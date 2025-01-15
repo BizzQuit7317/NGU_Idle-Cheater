@@ -5,6 +5,7 @@ use winapi::um::{
     processthreadsapi::OpenProcess,
     winnt::{HANDLE, MEMORY_BASIC_INFORMATION, PROCESS_VM_READ, PROCESS_QUERY_INFORMATION},
 };
+use std::io::{self, Write};
 
 fn get_process_id(PID_Name: &str) -> u32{
     let system = System::new_all();
@@ -82,14 +83,51 @@ fn get_address(PID: u32, target_value: i32) -> Vec<String> {
     address_list 
 }
 
+fn read_values_at_addresses(PID: u32, addresses: Vec<String>) {
+    let process_handle: HANDLE = unsafe { OpenProcess(PROCESS_VM_READ, 0, PID) };
+    if process_handle.is_null() {
+        eprintln!("Failed to open process with PID {}", PID);
+        return;
+    }
+
+    for address_str in &addresses {
+        let address = usize::from_str_radix(&address_str[2..], 16).unwrap(); // Convert the string address back to usize
+        let mut value = 0i32;
+        let mut bytes_read = 0;
+
+        // Read the value at the address
+        if unsafe {
+            ReadProcessMemory(
+                process_handle,
+                address as *const _,
+                &mut value as *mut _ as *mut _,
+                std::mem::size_of::<i32>(),
+                &mut bytes_read,
+            )
+        } != 0 && bytes_read == std::mem::size_of::<i32>()
+        {
+            println!("Address: {} -> Value: {}", address_str, value);
+        } else {
+            eprintln!("Failed to read value at address: {}", address_str);
+        }
+    }
+
+    unsafe { winapi::um::handleapi::CloseHandle(process_handle) };
+}
+
 
 
 fn main() {
     
     let PID = get_process_id("NGUIdle.exe");
-    let address_book = get_address(PID, 1410065795);
+    let address_book = get_address(PID, 888);
 
-    println!("{:?}\nChange your number of idle energy please and enter the new value: ", address_book);
+    println!("{:?}\nChange your number of idle energy please and enter the new value, click enter once value changed: ", address_book);
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to read line");
+    println!("Continuing execution...");
+
+    read_values_at_addresses(PID, address_book)
 
     //Use the address book and see what values have changed
 }
